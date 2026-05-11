@@ -121,6 +121,41 @@
             background_color: (0, 0, 0, 0) # Torna o fundo padrão invisível
             background_normal: ''         # Remove a textura padrão do Kivy
 
+        Button:
+            text:'SALVAR\nALTERAÇÕES'
+            size_hint:.2,.15
+            pos_hint:{'x':0.77,'y':0.75}
+            on_release:
+                app.guardartreino()
+
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.10, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+
+            background_color: (0, 0, 0, 0) # Torna o fundo padrão invisível
+            background_normal: ''         # Remove a textura padrão do Kivy
+
+        Button:
+            text:'LIMPAR\nTREINO'
+            size_hint:.2,.15
+            pos_hint:{'x':0.77,'y':0.5}
+            on_release:
+                app.limpartreino()
+
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.10, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+
+            background_color: (0, 0, 0, 0) # Torna o fundo padrão invisível
+            background_normal: ''         # Remove a textura padrão do Kivy
+
+
 <TelaAnotar>:
     #Mudar cor do fundo
     canvas.before:
@@ -130,6 +165,7 @@
             pos: self.pos
             size: self.size
     FloatLayout:
+        id: layoutanotar
         Label:
             text: 'QUAIS FORAM AS CARGAS \n DO TREINO DE HOJE?'
             size_hint: .2,.2

@@ -1,26 +1,35 @@
+from importlib.metadata import pass_none
+from json import JSONDecodeError
 from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+from kivy.uix.button import Button
 import sqlite3
 import json
 from kivy.clock import Clock
 from datetime import datetime
+from kivy.uix.textinput import TextInput
+from kivy.uix.dropdown import DropDown
+
 
 class MainApp (App):
     def build(self):
-        self.treino = {'DOM':[],'SEG':[],'TER':[],'QUA':[],'QUI':[],'SEX':[],'SAB':[]}
-        #Talvez não precise do self.input
+
+        self.treino = {'SEG':[],'TER':[],'QUA':[],'QUI':[],'SEX':[],'SAB':[],'DOM':[]}
         self.input=[]
         self.diaatual=datetime.now().strftime("%Y-%m-%d")
-        #Recebe dia da semana atual com base em self.treino
-        self.diadasemana= list(self.treino.keys())[(datetime.now().weekday()+1)%7]
+        #Recebe dia da semana atual correspondente a dada de self.diaatual
+        self.diadasemana=list(self.treino.keys())[datetime.now().weekday()]
+
         return Gerenciador()
 
     def exibirtreino(self, x, y, largura, altura):
 
+        with open('exercicios_base.json','r', encoding="utf-8") as exercicios_base:
+            exercicios_disponiveis=json.load(exercicios_base)
         layoutlistascroll= ScrollView(
                            size_hint=(largura, altura),
                            pos_hint={'center_x':x, 'center_y':y},
@@ -33,28 +42,45 @@ class MainApp (App):
         layoutlistascroll.add_widget(layoutlistabox)
 
         for dia in self.treino.keys():
-            treinostr=''
-            if len(self.treino[dia])>0:
-                for exercicio in self.treino[dia]:
-                    treinostr+=exercicio + '\n'
-                Coluna=Label(text=dia+ '\n' + exercicio)
-                layoutlistabox.add_widget(Coluna)
+            layout_coluna_box = BoxLayout(orientation='vertical')
+            layoutlistabox.add_widget(layout_coluna_box)
+            Dia= Label(text=f'{dia}')
+            layout_coluna_box.add_widget(Dia)
+            for x in range(0,6):
+                try:
+                    entrada= DropDown(text=f'{self.treino[dia][x]}')
+                    layout_coluna_box.add_widget(entrada)
+                except IndexError:
+                    entrada = DropDown(text='')
+                    layout_coluna_box.add_widget(entrada)
+                for exercicio in exercicios_disponiveis[exercicios]:
+                    opcoesdisponiveis= Button(text=f'{exercicio}'
+                                              on_release=(pass)
+                    )
+
 
         return layoutlistascroll
 
 
-    def guardartreino(self):
-
+    def guardartreino(self,*args):
+        #Escreve a lista atual
         with open("treinoatual.json", "w", encoding="utf-8") as treino:
             json.dump(self.treino, treino, indent=4, ensure_ascii=False)
 
     def lertreino(self):
+        #Tenta ler o documento treinoatual.json
         try:
             with open("treinoatual.json", "r", encoding="utf-8") as treino:
                 self.treino= json.load(treino)
-        except FileNotFoundError:
+        #Se o caso não exista, cria um usando o "w" da função with open()
+        except (FileNotFoundError,JSONDecodeError):
             with open("treinoatual.json", "w", encoding="utf-8") as treino:
                 json.dump(self.treino, treino, indent=4, ensure_ascii=False)
+
+    def limpartreino(self):
+        self.treino = {'SEG':[],'TER':[],'QUA':[],'QUI':[],'SEX':[],'SAB':[],'DOM':[]}
+        self.guardartreino()
+        self.exibirtreino()
 
     def guardarcargas(self):
         with sqlite3.connect('treinoatual.db') as conn:
@@ -65,10 +91,16 @@ class MainApp (App):
                               carga(Kg) FLOAT, 
                               data TEXT NOT NULL)'''
             )
+            treino_do_dia = self.treino[self.diadasemana]
+            for input in self.input:
+                cursor.execute(f'''INSERT INTO cargas VALUES
+                                   ({treino_do_dia[self.input.index(input)]},
+                                    {input},
+                                    {self.diaatual}
+                                    '''
+                )
 
-            cursor.execute(f'''INSERT INTO data {self.diaatual}; INSERT INTO cargas ''')
 
-        pass
 
     def lercargas(self):
         pass
@@ -92,17 +124,40 @@ class TelaInicial(Screen):
 
 class TelaConfig(Screen):
     def on_enter(self):
-        def carregar_treino(self, dt):
-            appinstancia = App.get_running_app()
-            listaemscroll = appinstancia.exibirtreino(.2, .5, .6, .6) # x  #y  #Largura #Altura
-            self.ids.layoutconfig.add_widget(listaemscroll)
+        app = App.get_running_app()
+        app.lertreino()
+        listaemscroll = app.exibirtreino(.5, .5, .5, .8) # x  #y  #Largura #Altura
+        self.ids.layoutconfig.add_widget(listaemscroll)
+
     pass
 
 class TelaAnotar(Screen):
     def on_enter(self):
         app=App.get_running_app()
-        for exercicio in app.treino[app.diadasemana]:
-            pass
+        app.lertreino()
+        layout_coluna_texto= BoxLayout(orientation='vertical',
+                                       size_hint=(0.1,0.1),
+                                       pos_hint={'center_x':.3, 'center_y':.5}
+                                       )
+        self.ids.layoutanotar.add_widget(layout_coluna_texto)
+        layout_coluna_input= BoxLayout(orientation='vertical',
+                                       size_hint=(0.2, 0.1),
+                                       pos_hint={'center_x': .5, 'center_y': .5}
+                                       )
+        self.ids.layoutanotar.add_widget(layout_coluna_input)
+
+        if len(app.treino[app.diadasemana]) > 0:
+            for exercicio in app.treino[app.diadasemana]:
+                Colunaexercicios= Label(text=exercicio)
+                layout_coluna_texto.add_widget(Colunaexercicios)
+                Colunainputs= TextInput(text='')
+                layout_coluna_input.add_widget(Colunainputs)
+        else:
+            Aviso= Label(text='HOJE É DIA DE DESCANSO, VOLTE AMANHÃ!\n (Atenção:'
+                                  'caso não seja dia de descanso, por favor verifique'
+                                  'o treino cadastrado nas configurações)'
+                             )
+            self.ids.layoutanotar.add_widget(Aviso)
 
         pass
 
