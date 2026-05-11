@@ -7,11 +7,16 @@ from kivy.uix.label import Label
 import sqlite3
 import json
 from kivy.clock import Clock
+from datetime import datetime
 
 class MainApp (App):
     def build(self):
-        self.treino = {'DOM':['a'],'SEG':['b'],'TER':['c'],'QUA':['d'],'QUI':['e'],'SEX':['f'],'SAB':['g']}
+        self.treino = {'DOM':[],'SEG':[],'TER':[],'QUA':[],'QUI':[],'SEX':[],'SAB':[]}
+        #Talvez não precise do self.input
         self.input=[]
+        self.diaatual=datetime.now().strftime("%Y-%m-%d")
+        #Recebe dia da semana atual com base em self.treino
+        self.diadasemana= list(self.treino.keys())[(datetime.now().weekday()+1)%7]
         return Gerenciador()
 
     def exibirtreino(self, x, y, largura, altura):
@@ -36,6 +41,37 @@ class MainApp (App):
                 layoutlistabox.add_widget(Coluna)
 
         return layoutlistascroll
+
+
+    def guardartreino(self):
+
+        with open("treinoatual.json", "w", encoding="utf-8") as treino:
+            json.dump(self.treino, treino, indent=4, ensure_ascii=False)
+
+    def lertreino(self):
+        try:
+            with open("treinoatual.json", "r", encoding="utf-8") as treino:
+                self.treino= json.load(treino)
+        except FileNotFoundError:
+            with open("treinoatual.json", "w", encoding="utf-8") as treino:
+                json.dump(self.treino, treino, indent=4, ensure_ascii=False)
+
+    def guardarcargas(self):
+        with sqlite3.connect('treinoatual.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('''CREATE TABLE IF NOT EXISTS cargas
+                            ( id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                              exercicio TEXT NOT NULL,
+                              carga(Kg) FLOAT, 
+                              data TEXT NOT NULL)'''
+            )
+
+            cursor.execute(f'''INSERT INTO data {self.diaatual}; INSERT INTO cargas ''')
+
+        pass
+
+    def lercargas(self):
+        pass
 
     def TextInput (self):
         pass
@@ -63,7 +99,12 @@ class TelaConfig(Screen):
     pass
 
 class TelaAnotar(Screen):
-    pass
+    def on_enter(self):
+        app=App.get_running_app()
+        for exercicio in app.treino[app.diadasemana]:
+            pass
+
+        pass
 
 class TelaEvo(Screen):
     pass
