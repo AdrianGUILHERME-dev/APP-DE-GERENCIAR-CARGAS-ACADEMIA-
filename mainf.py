@@ -1,4 +1,4 @@
-from importlib.metadata import pass_none
+from asyncio.windows_events import NULL
 from json import JSONDecodeError
 from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
@@ -13,6 +13,10 @@ from kivy.clock import Clock
 from datetime import datetime
 from kivy.uix.textinput import TextInput
 from kivy.uix.dropdown import DropDown
+from kivy.uix.button import Button
+from kivy.graphics import Color, RoundedRectangle, Line, Rectangle
+
+
 
 
 class MainApp (App):
@@ -23,44 +27,90 @@ class MainApp (App):
         self.diaatual=datetime.now().strftime("%Y-%m-%d")
         #Recebe dia da semana atual correspondente a dada de self.diaatual
         self.diadasemana=list(self.treino.keys())[datetime.now().weekday()]
+        self.layoutscroll=ScrollView()
+        self.identificadores={}
 
         return Gerenciador()
 
-    def exibirtreino(self, x, y, largura, altura):
+    def telaatual(self):
+        tela_atual = self.root.current_screen
+        return tela_atual
 
-        with open('exercicios_base.json','r', encoding="utf-8") as exercicios_base:
-            exercicios_disponiveis=json.load(exercicios_base)
-        layoutlistascroll= ScrollView(
-                           size_hint=(largura, altura),
-                           pos_hint={'center_x':x, 'center_y':y},
+    def exibirtreino(self):
+        # .4, .45, .65, .8
+        with open('exercicios_base.json', 'r', encoding="utf-8") as exercicios_base:
+            exerciciosbase = json.load(exercicios_base)
+            chaveexercicios = list(exerciciosbase.keys())
+            exerciciosbase[chaveexercicios[0]].sort()
+
+        self.layoutscroll = ScrollView(
+            size_hint=(.65, .8),
+            pos_hint={'center_x': .4, 'center_y': .45},
         )
 
-        layoutlistabox= BoxLayout(
-                        orientation='horizontal',
-                        size_hint=(largura + 1, altura )
+        layouthorizontalpai = BoxLayout(
+            orientation='horizontal',
+            size_hint_x=None,
+            width=2000
         )
-        layoutlistascroll.add_widget(layoutlistabox)
+        self.layoutscroll.add_widget(layouthorizontalpai)
+
+        dropdown = DropDown()
+
+        apagaropcao = BotaoRetangular(text='', height=44, size_hint_y=None)
+        apagaropcao.bind(on_release=lambda instance: dropdown.select(instance.text))
+        dropdown.add_widget(apagaropcao)
+
+        for exercicio in exerciciosbase[chaveexercicios[0]]:
+            opcoesdisponiveis = BotaoRetangular(text=f'{exercicio}', height=44, size_hint_y=None)
+            opcoesdisponiveis.bind(on_release=lambda instance: dropdown.select(instance.text))
+            dropdown.add_widget(opcoesdisponiveis)
 
         for dia in self.treino.keys():
-            layout_coluna_box = BoxLayout(orientation='vertical')
-            layoutlistabox.add_widget(layout_coluna_box)
-            Dia= Label(text=f'{dia}')
-            layout_coluna_box.add_widget(Dia)
-            for x in range(0,6):
+            layoutverticalfilho = BoxLayout(orientation='vertical')
+            layouthorizontalpai.add_widget(layoutverticalfilho)
+            Diatexto = Label(text=f'{dia}')
+            layoutverticalfilho.add_widget(Diatexto)
+            for x in range(0, 6):
                 try:
-                    entrada= DropDown(text=f'{self.treino[dia][x]}')
-                    layout_coluna_box.add_widget(entrada)
+                    textobotao = f'{self.treino[dia][x]}'
                 except IndexError:
-                    entrada = DropDown(text='')
-                    layout_coluna_box.add_widget(entrada)
-                for exercicio in exercicios_disponiveis[exercicios]:
-                    opcoesdisponiveis= Button(text=f'{exercicio}'
-                                              on_release=(pass)
-                    )
+                    textobotao = ''
+
+                botaopai = BotaoRetangular(text=f'{textobotao}')
+                botaopai.id=f"{dia}"+f"{x}"
+                layoutverticalfilho.add_widget(botaopai)
+                self.identificadores[botaopai.id]=botaopai
+
+                botaopai.bind(on_release=lambda btn: self.abrir_dropdown_para_botao(btn, dropdown))
+         
+        return self.layoutscroll
+
+    def abrir_dropdown_para_botao(self, botao, objeto_dropdown):
+        # 1. Limpa qualquer bind anterior do dropdown para não acumular
+        objeto_dropdown.unbind(
+            on_select=objeto_dropdown.callback_atual if hasattr(objeto_dropdown, 'callback_atual') else lambda *x: None)
+
+        # 2. Cria a função que vai atualizar o botão específico que foi clicado
+        def atualizar_texto(instance, texto_selecionado):
+            botao.text = texto_selecionado
+            #Recupera dia e posição na tabela através do id de cada botão.
+            #E adiciona na lista de treino.
+            self.receberinput(botao)
+        # 3. Salva a referência para podermos limpar no próximo clique
+        objeto_dropdown.callback_atual = atualizar_texto
+
+        # 4. Associa o evento e abre o menu na posição do botão
+        objeto_dropdown.bind(on_select=atualizar_texto)
+        objeto_dropdown.open(botao)
 
 
-        return layoutlistascroll
-
+    def receberinput(self, instance):
+        textobotao=instance.text
+        try:
+            self.treino[instance.id[:3]][int(instance.id[4])]=textobotao
+        except IndexError:
+            self.treino[instance.id[:3]].append(textobotao)
 
     def guardartreino(self,*args):
         #Escreve a lista atual
@@ -79,8 +129,9 @@ class MainApp (App):
 
     def limpartreino(self):
         self.treino = {'SEG':[],'TER':[],'QUA':[],'QUI':[],'SEX':[],'SAB':[],'DOM':[]}
+        for botao in self.identificadores.values():
+            botao.text=''
         self.guardartreino()
-        self.exibirtreino()
 
     def guardarcargas(self):
         with sqlite3.connect('treinoatual.db') as conn:
@@ -125,48 +176,107 @@ class TelaInicial(Screen):
 class TelaConfig(Screen):
     def on_enter(self):
         app = App.get_running_app()
+        self.ids.layoutconfig.remove_widget(app.layoutscroll)
         app.lertreino()
-        listaemscroll = app.exibirtreino(.5, .5, .5, .8) # x  #y  #Largura #Altura
+        listaemscroll = app.exibirtreino() # x  #y  #Largura #Altura
         self.ids.layoutconfig.add_widget(listaemscroll)
 
     pass
 
 class TelaAnotar(Screen):
     def on_enter(self):
+
+        self.aviso=Label()
+
         app=App.get_running_app()
         app.lertreino()
-        layout_coluna_texto= BoxLayout(orientation='vertical',
-                                       size_hint=(0.1,0.1),
-                                       pos_hint={'center_x':.3, 'center_y':.5}
-                                       )
-        self.ids.layoutanotar.add_widget(layout_coluna_texto)
-        layout_coluna_input= BoxLayout(orientation='vertical',
-                                       size_hint=(0.2, 0.1),
-                                       pos_hint={'center_x': .5, 'center_y': .5}
-                                       )
-        self.ids.layoutanotar.add_widget(layout_coluna_input)
+
 
         if len(app.treino[app.diadasemana]) > 0:
+            c=0
             for exercicio in app.treino[app.diadasemana]:
-                Colunaexercicios= Label(text=exercicio)
-                layout_coluna_texto.add_widget(Colunaexercicios)
-                Colunainputs= TextInput(text='')
-                layout_coluna_input.add_widget(Colunainputs)
+                c=c+1
+                Colunaexercicios= Label(text=exercicio,
+                                        size_hint_y=None,
+                                        height=50
+                                        )
+                self.ids.boxtexto.add_widget(Colunaexercicios)
+                Colunainputs= TextInput(text='',
+                                        size_hint_y=None,
+                                        height=50
+                                        )
+                self.ids.boxentrada.add_widget(Colunainputs)
         else:
-            Aviso= Label(text='HOJE É DIA DE DESCANSO, VOLTE AMANHÃ!\n (Atenção:'
+            self.aviso= Label(text='HOJE É DIA DE DESCANSO, VOLTE AMANHÃ!\n (Atenção:'
                                   'caso não seja dia de descanso, por favor verifique'
                                   'o treino cadastrado nas configurações)'
                              )
-            self.ids.layoutanotar.add_widget(Aviso)
+            self.ids.layoutanotar.add_widget(self.aviso)
 
         pass
+
+    def on_leave(self):
+        self.ids.layoutanotar.remove_widget(self.aviso)
+        self.ids.boxtexto.clear_widgets()
+        self.ids.boxentrada.clear_widgets()
 
 class TelaEvo(Screen):
     pass
 
+
 class Gerenciador(ScreenManager):
     pass
 
+######################################### BOTÕES PERSONALIZADOS ############################################
+class BotaoArredondado(Button):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # 1. Configurações básicas de transparência
+        self.background_color = (0, 0, 0, 0)
+        self.background_normal = ''
+
+        # 2. Desenho do fundo arredondado
+        with self.canvas.before:
+            Color(0.10, 0.10, 0.10, 1)  # A cor que você definiu
+            self.rect = RoundedRectangle(
+                pos=self.pos,
+                size=self.size,
+                radius=[15, ]  # Arredondamento dos cantos
+            )
+
+        # 3. Vínculo crucial: se o botão mudar de lugar ou tamanho, redesenha o fundo
+        self.bind(pos=self.atualizar_canvas, size=self.atualizar_canvas)
+
+    def atualizar_canvas(self, *args):
+        self.rect.pos = self.pos
+        self.rect.size = self.size
+
+
+class BotaoRetangular(Button):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.background_color = (0, 0, 0, 0)
+        self.background_normal = ''
+
+        with self.canvas.before:
+            Color(0.10, 0.10, 0.10, 1)
+            self.rect = Rectangle(pos=self.pos, size=self.size)
+
+            # Use um cinza um pouco mais claro (0.3) para testar se aparece,
+            # depois você volta para o 0.05 se preferir.
+            Color(0.08, 0.08, 0.08, 1)
+            self.linha_borda = Line(rectangle=(self.x, self.y, self.width, self.height), width=1.2)
+
+        self.bind(pos=self.atualizar_canvas, size=self.atualizar_canvas)
+
+    def atualizar_canvas(self, *args):
+        self.rect.pos = self.pos
+        self.rect.size = self.size
+        # CORREÇÃO: O nome deve ser EXATAMENTE o mesmo que você criou no __init__
+        self.linha_borda.rectangle = (self.x, self.y, self.width, self.height)
+
+############################################################################################################
 
 if __name__ == '__main__':
     app = MainApp()
