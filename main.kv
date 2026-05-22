@@ -1,0 +1,227 @@
+#Cinza Gemini (escuro) rgba: 0.075, 0.075, 0.078, 1
+#Cinza Gemini (claro) rgba: 0.10 0.10 0.10 1
+
+
+
+<Gerenciador>:
+    TelaInicial:
+        name:'tela_inicial'
+    TelaConfig:
+        name:'tela_config'
+    TelaAnotar:
+        name:'tela_anotar'
+    TelaEvo:
+        name:'tela_evo'
+
+<TelaInicial>:
+    #Mudar cor do fundo
+    canvas.before:
+        Color:
+            rgba: 0.075, 0.075, 0.078, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    FloatLayout:
+        id: layoutinicial
+        orientation:'vertical'
+        Label:
+            text:'Gym Evo Tracker ( G.E.T )'
+            size_hint: 0.2, 0.2
+            pos_hint: {'x':0.4,'y':0.8}
+
+        Button:
+            text: 'Anotar Cargas De Hoje'
+            size_hint: 0.2,0.2
+            pos_hint:{'x':0.4,'y':0.6}
+            on_release:
+                root.manager.current = 'tela_anotar'
+                root.manager.transition.direction = 'down'
+
+            #COR DO BOTÃO
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.10, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+
+            background_color: (0, 0, 0, 0) # Torna o fundo padrão invisível
+            background_normal: ''         # Remove a textura padrão do Kivy
+
+        Button:
+            text: 'Analisar Desempenho'
+            size_hint: 0.2,0.2
+            pos_hint:{'x':0.4,'y':0.35}
+            on_release:
+                root.manager.current = 'tela_evo'
+                root.manager.transition.direction = 'left'
+
+            #COR DO BOTÃO
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.10, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+
+            background_color: (0, 0, 0, 0) # Torna o fundo padrão invisível
+            background_normal: ''         # Remove a textura padrão do Kivy
+
+        Button:
+            text: 'Ir para configuração \n de treino'
+            size_hint: 0.2,0.2
+            pos_hint:{'x':0.4,'y':0.1}
+            on_release:
+                root.manager.current = 'tela_config'
+                root.manager.transition.direction = 'up'
+
+            #COR DO BOTÃO
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.10, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+
+            background_color: (0, 0, 0, 0) # Torna o fundo padrão invisível
+            background_normal: ''         # Remove a textura padrão do Kivy
+
+<TelaConfig>:
+    #Mudar cor do fundo
+    canvas.before:
+        Color:
+            rgba: 0.075, 0.075, 0.078, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    FloatLayout:
+        id: layoutconfig
+        Label:
+            text: 'TELA DE CONFIGURAÇÃO'
+            size_hint: .2,.2
+            pos_hint:{'x':.4,'y':.87}
+        Button:
+            text: 'Voltar'
+            size_hint: 0.2,0.1
+            pos_hint:{'x':0,'y':0.9}
+            on_release:
+                root.manager.current = 'tela_inicial'
+                root.manager.transition.direction = 'down'
+
+            #COR DO BOTÃO
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.10, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+
+            background_color: (0, 0, 0, 0) # Torna o fundo padrão invisível
+            background_normal: ''         # Remove a textura padrão do Kivy
+
+        Button:
+            text:'SALVAR\nALTERAÇÕES'
+            size_hint:.2,.15
+            pos_hint:{'x':0.77,'y':0.75}
+            on_release:
+                app.guardartreino()
+
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.10, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+
+            background_color: (0, 0, 0, 0) # Torna o fundo padrão invisível
+            background_normal: ''         # Remove a textura padrão do Kivy
+
+        Button:
+            text:'LIMPAR\nTREINO'
+            size_hint:.2,.15
+            pos_hint:{'x':0.77,'y':0.5}
+            on_release:
+                app.limpartreino()
+
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.10, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+
+            background_color: (0, 0, 0, 0) # Torna o fundo padrão invisível
+            background_normal: ''         # Remove a textura padrão do Kivy
+
+
+<TelaAnotar>:
+    #Mudar cor do fundo
+    canvas.before:
+        Color:
+            rgba: 0.075, 0.075, 0.078, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    FloatLayout:
+        id: layoutanotar
+        Label:
+            text: 'QUAIS FORAM AS CARGAS \n DO TREINO DE HOJE?'
+            size_hint: .2,.2
+            pos_hint:{'x':.4,'y':.87}
+        Button:
+            text: 'Voltar'
+            size_hint: 0.2,0.1
+            pos_hint:{'x':0,'y':0.9}
+            on_release:
+                root.manager.current = 'tela_inicial'
+                root.manager.transition.direction = 'up'
+
+            #COR DO BOTÃO
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.10, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+
+            background_color: (0, 0, 0, 0) # Torna o fundo padrão invisível
+            background_normal: ''         # Remove a textura padrão do Kivy
+
+
+<TelaEvo>:
+    #Mudar cor do fundo
+    canvas.before:
+        Color:
+            rgba: 0.075, 0.075, 0.078, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    FloatLayout:
+        Label:
+            text: 'Análise de Desempenho:'
+            size_hint: .2,.2
+            pos_hint:{'x':.4,'y':.87}
+        Button:
+            text: 'Voltar'
+            size_hint: 0.2,0.1
+            pos_hint:{'x':0,'y':0.9}
+            on_release:
+                root.manager.current = 'tela_inicial'
+                root.manager.transition.direction = 'right'
+
+            #COR DO BOTÃO
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.10, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+
+            background_color: (0, 0, 0, 0) # Torna o fundo padrão invisível
+            background_normal: ''         # Remove a textura padrão do Kivy
+
+
+
+
