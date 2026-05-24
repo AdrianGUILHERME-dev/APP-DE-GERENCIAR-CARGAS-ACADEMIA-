@@ -2,6 +2,7 @@
 No intuito de resolver um problema que tenho, resolvi criar este App para organizar e lembrar as cargas que estou utilizando em cada exercício na academia. Além disso, pretendo implementar um sistema de análise estatística para analisar a evolução ao longo do tempo.
 
 🚀 Como Executar o Projeto Localmente
+
 Para rodar este aplicativo, você precisará ter o Python 3 instalado em sua máquina. Siga os passos abaixo:
 
 1. Clonar o repositório
